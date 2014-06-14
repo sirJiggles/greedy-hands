@@ -1,0 +1,48 @@
+
+/* ================ MAIN LAYOUT ELEMENTS ================ */
+
+body,html{
+    height:100%;
+    width:100%;
+    @include sans-font();
+    background-color:black;
+}
+
+body {
+    position:relative;
+    overflow: hidden;
+    margin:0;
+}
+
+.container{
+    height:100%;
+}
+
+
+#game-wrapper{
+    width:100%;
+    height:100%;
+
+    #game-inner{
+        position:absolute;
+        left:50%;
+        top:50%;
+        overflow: hidden;
+    }
+
+    canvas{
+        position:absolute;
+    }
+}
+
+*{
+    @include border-box('#{$siteUrl}/assets/js/vendor/border-box.htc');
+}
+
+.clear-both{
+    clear:both;
+    font-size:0px;
+    line-height:0px;
+    height:0px;
+}
+

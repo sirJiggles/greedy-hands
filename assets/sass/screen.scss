@@ -1,0 +1,15 @@
+@import "compass/css3";
+
+@import "icons/*.png";
+@import "icons-2x/*.png";
+
+// Includes
+@import "includes/_settings";
+@import "includes/_mixins";
+@import 'includes/_header';
+@import 'includes/_footer';
+@import 'includes/_style';
+@import 'includes/_responsive';
+
+// Views
+@import 'views/_index';

@@ -1,0 +1,158 @@
+@mixin border-shape($width:10px, $height:10px){
+    position:absolute;
+    width:$width;
+    height:$height;
+    content:' ';
+    display:block;
+    float:left;
+    outline:none;
+}
+
+@mixin after-drop-shadow(){
+    position:relative;
+    z-index:10;
+
+    &:after{
+        position: absolute;
+        left: 10%;
+        content: ' ';
+        bottom: 1px;
+        @include border-radius(0 0 100% 100%, 0 0 200% 200%);
+        width: 80%;
+        height: 3px;
+        @include box-shadow(0 2px 2px 0 #999);
+        z-index:-1;
+    }
+
+}
+
+@mixin left-arrow($color:#888, $height:10px, $width:10px){
+    border-top:transparent solid $width;
+    border-right:$color solid $height;
+    border-bottom:transparent solid $width;
+    border-left:transparent solid $height;
+}
+
+@mixin right-arrow($color:#888, $height:10px, $width:10px){
+    border-top:transparent solid $width;
+    border-right:transparent solid $height;
+    border-bottom:transparent solid $width;
+    border-left:$color solid $height;
+}
+
+@mixin up-arrow($color:#888, $height:10px, $width:10px){
+    border-top:transparent solid $width;
+    border-right:transparent solid $height;
+    border-bottom:$color solid $width;
+    border-left:transparent solid $height;
+}
+
+@mixin down-arrow($color:#888, $height:10px, $width:10px){
+    border-top:$color solid $width;
+    border-right:transparent solid $height;
+    border-bottom:transparent solid $width;
+    border-left:transparent solid $height;
+}
+
+@mixin no-border-box(){
+    -webkit-box-sizing:none !important;
+    -moz-box-sizing:none !important;
+    box-sizing:none !important;
+    *behavior:none !important;
+}
+
+@mixin em-font($px:12){
+    font-size:(1 / $base-font) * $px + em;
+}
+
+@mixin em-line-height($px:12){
+    line-height:((1 / $base-font) * $px) + (((1 / $base-font) * $px) / 2) + em;
+}  
+
+@mixin block-left(){
+    display:block;
+    float:left;
+}
+
+@mixin reset-box(){
+    padding:0;
+    margin:0;
+}
+    
+@mixin sans-font(){
+    font-family: 'Source Sans Pro', sans-serif;
+    font-weight: 400;
+}
+
+
+@mixin no-rounded(){
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+    border-radius: 0px;
+}
+
+@mixin no-drop-shadow(){
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+}
+
+
+@mixin bg-gradient($from:#222, $to:#fff, $from-percentage:0%, $to-percentage:100%, $filter:'yarp'){
+    background: -moz-linear-gradient(top, $from $from-percentage, $to $to-percentage);
+    background: -webkit-gradient(linear, left top, left bottom, color-stop($from-percentage,$from), color-stop($to-percentage,$to));
+    background: -webkit-linear-gradient(top, $from $from-percentage,$to $to-percentage);
+    background: -o-linear-gradient(top, $from $from-percentage,$to $to-percentage);
+    background: -ms-linear-gradient(top, $from $from-percentage,$to $to-percentage);
+    background: linear-gradient( to bottom, $from $from-percentage,$to $to-percentage);
+    @if $filter == 'yarp'{
+        filter: unquote("progid:DXImageTransform.Microsoft.gradient(startColorstr='")
+        + $from
+        + unquote("', endColorstr='")
+        + $to
+        + unquote("',GradientType=0)");
+    }
+}
+
+
+@mixin border-box($url:''){
+    -webkit-box-sizing:border-box;
+    -moz-box-sizing:border-box;
+    box-sizing:border-box;
+    @if $url != ''{
+        *behavior:url($url);
+    }
+}
+
+// RETINA SPRITES
+
+$sprites: sprite-map("icons/*.png", $spacing: 20px);
+$sprites2x: sprite-map("icons-2x/*.png", $spacing: 40px);
+
+// Override the default sprite mixin
+@mixin sprite($name){
+  @include retina-sprite($name, $sprites, $sprites2x);
+}
+
+@mixin retina-sprite($name, $sprites, $sprites2x, $dimensions: true, $pad: 0){
+
+    @if $dimensions == true{
+        @include sprite-dimensions($sprites, $name);
+    }
+
+    background-image: sprite-url($sprites);
+    background-position: sprite-position($sprites, $name, -$pad, -$pad);
+    background-repeat: no-repeat;
+
+    @if $pad > 0{
+        padding: $pad
+    }
+
+    @media only screen and (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi){
+        
+          $pos: sprite-position($sprites2x, $name, -$pad*2, -$pad*2);
+          background-image: sprite-url($sprites2x);
+          background-position: nth($pos, 1) nth($pos, 2)/2;
+          @include background-size( ceil(image-width(sprite-path($sprites2x)) / 2), auto );
+    }
+}
