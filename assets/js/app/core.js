@@ -25,31 +25,33 @@ var core = {
     handicap		: 20,
     gridWidth		: 500 / 10,
     gridHeight		: 300 / 10,
+    amountHands 	: 8,
     possibleHands	: [
     					{
 							file:'lady.png',
-							topSpeed:30,
+							topSpeed:3,
 						},
 						{
 							file:'man.png',
-							topSpeed:25,
+							topSpeed:2.5,
 						},
 						{
 							file:'muscle-man.png',
-							topSpeed:20,
+							topSpeed:2,
 						},
 						{
 							file:'old-lady.png',
-							topSpeed:15,
+							topSpeed:1.5,
 						}
     				  ],
   	handLocations 	: [],
     hands 			: [],
+    stationaryHands : [],
   	handTimer		: null,
+  	gameStillRunning : true,
+  	handChooseSpeed : 1000,
   	cakeLocation	: null,
   	debugDot 		: null,
-  	armLength 		: 450,
-  	lastHandPicked  : null,
   	currentScore	: 0,
   	bestScore		: 5000,
   	scoreContainer  : $('#score em'),
@@ -66,16 +68,11 @@ var core = {
 		// set the scene sizes up
 		core.resizeWindowCallback();
 
-		core.cakeLocation = new core.Vector2D( core.width / 2, core.height / 2);
-
 		// grab all the hands and set them up
-		$.each($('.hand'), function(index, hand){
-			core.canvases['hand-'+index] = hand;
-			// get some random hand settings
+		for(var i = 0; i < core.amountHands; i ++){
 			var handSettings = core.possibleHands[Math.floor(Math.random()*core.possibleHands.length)];
-			// create a new sprite with it
-			handSprite = new core.Hand(index, handSettings);
-		});
+			handSprite = new core.Hand(i, handSettings);
+		};
 
 		var cakeOptions = {
 			frames:0,
@@ -87,76 +84,77 @@ var core = {
 			x:core.cakeLocation.x + this.outputWidth / 2,
 			y:core.cakeLocation.y + this.outputHeight / 2,
 			canvas:core.canvases.cake,
-			once:false
+			once:false,
+			speed:1
 		};
 		var cakeImage = new core.SpriteSheet(cakeOptions).start();
 		core.state.sprites.push(cakeImage);
+		core.cake = cakeImage;
 
 		core.debugDot = new core.DebugDot();
 
+		core.setEvents();
+
 		// set the scene sizes up
 		core.resizeWindowCallback();
-
-		core.setEvents();	
 
 		// start the game
 		core.play();
 
 		// start the shuffle of the hands
-		core.startHandShuffle();
-		
+		core.tick();
+
 	},
 
 	// this runs when someone got the cake
 	gotTheCake: function(){
-		/*core.pause();
-		clearInterval(core.handTimer);
+		core.pause();
+		core.gameStillRunning = false;
 		$('#lose-container').show();
-		$('#lose strong').html(core.currentScore);*/
+		$('#lose strong').html(core.currentScore);
 	},
 
 	playAgain: function(){
 		$('#lose-container').hide();
 		// set some new hands up and reset the speeds of those hands
-		$.each(core.state.sprites, function(index, sprite){
-			if(typeof sprite.angle !== 'undefined' && sprite.angle){
-				var randomHand = core.possibleHands[Math.floor(Math.random()*core.possibleHands.length)];
-				sprite.topSpeed = randomHand.topSpeed;
-				sprite.img = new Image();
-				sprite.img.src = 'assets/img/'+randomHand.file;
-				sprite.clear();
-			};
-		});
+		for(var i = 0; i < core.hands.length; i ++){
+			var hand = core.hands[i];
+			var randomHand = core.possibleHands[Math.floor(Math.random()*core.possibleHands.length)];
+			hand.topSpeed = randomHand.topSpeed;
+			hand.img = new Image();
+			hand.retreating = false;
+			hand.img.src = 'assets/img/'+randomHand.file;
+			hand.clear();
+		};
 		core.resizeWindowCallback();
 		core.currentScore = 0;
 		$('#best-score').html(core.bestScore);
+		core.gameStillRunning = true;
+		core.handChooseSpeed = 1000;
+		core.tick();
 		core.play();
-		core.startHandShuffle();
 	},
 
 	// this function starts the timer that will poke all the arms out
-	startHandShuffle: function(){
-		core.handTimer = window.setInterval(function(){
+	tick: function(){
 
-			// grab a random hand (never the same one as the last one picked)
-			var handToMove = core.selectRandomHand();
-
-			handToMove.target = core.cakeLocation;
-			handToMove.moving = true;
-			handToMove.newTarget = true;
-
-			core.lastHandPicked = handToMove;
-
-		}, 1000);
-	},
-
-	selectRandomHand: function(){
-		var handToMove = core.hands[Math.floor(Math.random()*core.hands.length)];
-		if(handToMove != core.lastHandPicked && handToMove.moving == false){
-			return handToMove;
-		}else{
-			return core.selectRandomHand();
+		if (core.stationaryHands.length <= 0){
+			return false;
 		}
+
+		// grab a random hand (never the same one as the last one picked)
+		var handToMove = core.stationaryHands[Math.floor(Math.random()*core.stationaryHands.length)];
+
+		//var handToMove = core.hands[Math.floor(Math.random()*core.hands.length)];
+		handToMove.target = core.cakeLocation;
+		handToMove.moving = true;
+		handToMove.newTarget = true;
+
+        core.handChooseSpeed -= 3;
+
+        if (core.gameStillRunning){
+            core.handTimer = window.setTimeout(core.tick.bind(this), core.handChooseSpeed);
+        }
 	},
 
 	setEvents: function(){
@@ -184,18 +182,19 @@ var core = {
 				clickY = evt.pageY - offset.top;
 
 			// loop through all the sprites and check if the click is within one of the arms current locations
-			for(var i = 0; i < core.state.sprites.length; i ++){
-				var sprite = core.state.sprites[i],
+			for(var i = 0; i < core.hands.length; i ++){
+				var hand = core.hands[i],
 					// create an unlinked copy of location
-					locationSnapshot = $.extend({}, sprite.location);
+					locationSnapshot = $.extend({}, hand.location);
 
 				// if click inside the sprite location
-				if( (clickX - core.handicap) < (locationSnapshot.x + sprite.outputWidth) &&
+				if( (clickX - core.handicap) < (locationSnapshot.x + hand.outputWidth) &&
 					(clickX + core.handicap) > locationSnapshot.x &&
 					(clickY + core.handicap) > locationSnapshot.y &&
-					(clickY - core.handicap) < (locationSnapshot.y + sprite.outputHeight) ){
-					sprite.target = sprite.startLocation;
-					sprite.newTarget = true;
+					(clickY - core.handicap) < (locationSnapshot.y + hand.outputHeight) ){
+					hand.target = hand.startLocation;
+					hand.newTarget = true;
+					hand.retreating = true;
 				}
 			}
 
@@ -208,9 +207,17 @@ var core = {
 	// update function this is called each frame
 	update: function(dt){
 
+		// clear the list of hands that are not moving
+		core.stationaryHands = [];
+
 		// call the update for the sprites here
 		for(var i = 0; i < core.state.sprites.length; i ++){
-			core.state.sprites[i].update(dt);
+			var sprite = core.state.sprites[i];
+			sprite.update(dt);
+			// if its a hand and its not moving, add it to the list of stationary hands (for random picking)
+			if(sprite.angle && sprite.moving === false){
+				core.stationaryHands.push(sprite);
+			}
 		}
 
 		// update the score
@@ -286,20 +293,14 @@ var core = {
 		core.gridWidth = core.width / 10;
 		core.gridHeight = core.height / 10;
 
-		core.handLocations = [  {x:core.gridWidth * -1, y: -core.armLength, angle: 150},
-		  						{x:core.gridWidth * 2, y: -core.armLength, angle: 175},
-		  						{x:core.gridWidth * 5, y: -core.armLength, angle: 185},
-		  						{x:core.gridWidth * 8.5, y: -core.armLength, angle: 200},
+		core.handLocations = [  {x:core.gridWidth * -1, y: -core.height, angle: 150},
+		  						{x:core.gridWidth * 2, y: -core.height, angle: 175},
+		  						{x:core.gridWidth * 5, y: -core.height, angle: 185},
+		  						{x:core.gridWidth * 8.5, y: -core.height, angle: 200},
 		  						{x:core.gridWidth * -1, y: core.height, angle: 10},
 		  						{x:core.gridWidth * 2, y: core.height, angle: 5},
 		  						{x:core.gridWidth * 5, y: core.height, angle: -5},
-		  						{x:core.gridWidth * 8.5, y: core.height, angle: -10},
-		  						{x:core.gridWidth * -4, y: core.gridHeight * -1, angle: 110},
-		  						{x:core.gridWidth * -4, y: core.gridHeight * 3, angle: 90},
-		  						{x:core.gridWidth * -4, y: core.gridHeight * 6, angle: 70},
-		  						{x:core.gridWidth * 12, y: core.gridHeight * -1, angle: -110},
-		  						{x:core.gridWidth * 12, y: core.gridHeight * 3, angle: -90},
-		  						{x:core.gridWidth * 12, y: core.gridHeight * 6, angle: -70} ];
+		  						{x:core.gridWidth * 8.5, y: core.height, angle: -10} ];
 
 		var newWidthToHeight = core.width / core.height;
 		if(newWidthToHeight > core.widthToHeight){
@@ -315,7 +316,7 @@ var core = {
 			'margin-left':-core.width / 2
 		});
 
-		//core.cakeLocation = new core.Vector2D( core.width / 2, core.height / 2);
+		core.cakeLocation = new core.Vector2D( core.width / 2, core.height / 2);
 		if(core.hands.length > 0){
 			core.cakeLocation.x = (core.width / 2) - (core.hands[0].outputWidth / 2);
 			core.cakeLocation.y = (core.height / 2) - (core.hands[0].outputHeight / 2);
@@ -340,27 +341,23 @@ var core = {
 		}
     },
 
-    updateSprites: function(locationAlso){
-   
-   		// update the location, speed and the size of the sprites
-    	for(var i = 0; i < core.state.sprites.length; i ++){
-    		var sprite = core.state.sprites[i];
-    		sprite.moving = false;
-    		if(typeof sprite.location !== 'undefined' && locationAlso){
-    			if(typeof sprite.angle !== 'undefined' && sprite.angle){
-	    			sprite.location.x = core.handLocations[i].x;
-					sprite.location.y = core.handLocations[i].y;
-				}else{
-					sprite.location.x = (core.width / 2) - (sprite.outputWidth / 2);
-					sprite.location.y = (core.height / 2) - (sprite.outputHeight / 2);
-				}
-    		}
-    		// set the height to be the same as width to maintain the aspect ratio
-    		sprite.outputHeight *= core.xRatio;
-    		sprite.outputWidth *= core.xRatio;
-    		sprite.topSpeed *= core.xRatio;
-    		sprite.clear();
-    	}
+    updateSprites: function(){
+
+    	// update hand locations
+    	for(var i = 0; i < core.hands.length; i ++){
+    		var hand = core.hands[i];
+    		hand.location.x = core.handLocations[i].x;
+    		hand.location.y = core.handLocations[i].y;
+			hand.outputHeight *= core.xRatio;
+    		hand.outputWidth *= core.xRatio;
+    		hand.topSpeed *= core.xRatio;
+    	};
+
+    	// update cake location
+    	if(core.cake){
+	    	core.cake.location.x = (core.width / 2) - (core.cake.outputWidth / 2);
+			core.cake.location.y = (core.height / 2) - (core.cake.outputHeight / 2);
+		}
 
     },
 
@@ -376,10 +373,6 @@ var core = {
     		canvas.width = core.width;
     		canvas.height = core.height;
     	});
-
-		// work out based on the width and the height of the window what the ratio of widths and heights for the graph is
-		core.graphWidthMagnifier = core.width / core.graphSize;
-		core.graphHeightMagnifier = core.height / core.graphSize;
     },
 
     playSound: function(index, loop){

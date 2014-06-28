@@ -28,6 +28,7 @@ core.SpriteSheet = function(options){
 	this.done = true;
 	this.topSpeed = (typeof options.topSpeed !== 'undefined') ? options.topSpeed : 10;
 	this.angle = (typeof options.angle !== 'undefined') ? options.angle : null;
+	this.retreating = false;
 
 	this.location = new core.Vector2D(options.x, options.y);
 	this.lastLocation = new core.Vector2D(this.location);
@@ -71,8 +72,6 @@ core.SpriteSheet.prototype.update = function(dt){
 		if(this.timePassed >= this.speed){
 			this.render();
 			this.timePassed = 0;
-			// start the runaway train
-			this.topSpeed += 0.1 / 3;
 		}
 	}
 }
@@ -96,7 +95,7 @@ core.SpriteSheet.prototype.render = function(){
 	if(typeof this.angle !== 'undefined' && this.angle !== null){
 		this.rotateDraw(nextFrameLoc);
 	}else{
-		// draw the new image
+
 		this.ctx.drawImage( this.img, 
 							nextFrameLoc, 
 							0, 

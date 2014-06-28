@@ -40,18 +40,25 @@ core.Mover.prototype.seek = function(optionalTarget){
 	}else{
 		// continue to move as fast as possible to target
 		desired.normalize();
-		desired.mult(this.topSpeed);
+		
+		if(this.retreating){
+			// hard set for this little game
+			desired.mult(20);
+		}else{
+			desired.mult(this.topSpeed);
+		}
 	}
 
 	if(distance < 10){
 		this.moving = false;
+		this.retreating = false;
 	}
 
 	// a little custm check to see if we are at the cake location
 	if(distance < 160){
 		if(core.maths.aboutTheSame(this.location, core.cakeLocation, 160)){
 			// stop the game and stop the score as someone got the cake!
-			//core.gotTheCake();
+			core.gotTheCake();
 			this.moving = false;
 		}
 	}
