@@ -95,16 +95,7 @@ core.SpriteSheet.prototype.render = function(){
 	if(typeof this.angle !== 'undefined' && this.angle !== null){
 		this.rotateDraw(nextFrameLoc);
 	}else{
-
-		this.ctx.drawImage( this.img, 
-							nextFrameLoc, 
-							0, 
-							this.width, 
-							this.height, 
-							this.location.x, 
-							this.location.y, 
-							this.outputWidth,
-							this.outputHeight);
+		this.draw(nextFrameLoc);
 	}
 
 	// update the current frame
@@ -128,26 +119,51 @@ core.SpriteSheet.prototype.clear = function() {
 	this.ctx.clearRect(0,0,core.width,core.height);
 };
 
-// rotate the sprite util function
-core.SpriteSheet.prototype.rotateDraw = function(nextFrameLoc){
+// this wil rotate the ctx once arround an image and not restore it
+core.SpriteSheet.prototype.rotateCtxArroundImage = function(){
 
-	this.ctx.save();
-	// set origin to the center of the image
 	this.ctx.translate( (this.location.x + (this.outputWidth / 2) ), 
 						(this.location.y + (this.outputHeight / 2) ) );
 
 	this.ctx.rotate( this.angle * (Math.PI / 180) );
 
-	// draw the new image
+}
+
+// draw an image
+core.SpriteSheet.prototype.draw = function(nextFrameLoc){
+	if(!core.sanityCheck([nextFrameLoc])){return false;}
+
+	// draw image
 	this.ctx.drawImage( this.img, 
 						nextFrameLoc, 
 						0, 
 						this.width, 
 						this.height, 
-						-(this.outputWidth / 2), 
-						-(this.outputHeight / 2), 
+						this.location.x, 
+						this.location.y, 
 						this.outputWidth,
 						this.outputHeight);
+}
+
+// rotate the sprite util function
+core.SpriteSheet.prototype.rotateDraw = function(nextFrameLoc){
+	if(!core.sanityCheck([nextFrameLoc])){return false;}
+
+	this.ctx.save();
+
+	var centerX = (this.location.x + (this.outputWidth / 2)),
+		centerY = (this.location.y + (this.outputHeight / 2));
+
+	// set origin to the center of the image
+	this.ctx.translate(centerX, centerY);
+
+	// rotate the ctx
+	this.ctx.rotate( this.angle * (Math.PI / 180) );
+
+	// translate back to top left
+	this.ctx.translate(-centerX,-centerY);
+
+	this.draw(nextFrameLoc);
 
 	// restore the origin for the context
 	this.ctx.restore();

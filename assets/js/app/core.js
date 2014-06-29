@@ -109,7 +109,6 @@ var core = {
 	// this runs when someone got the cake
 	gotTheCake: function(){
 		core.pause();
-		core.gameStillRunning = false;
 		$('#lose-container').show();
 		$('#lose strong').html(core.currentScore);
 	},
@@ -138,22 +137,25 @@ var core = {
 	// this function starts the timer that will poke all the arms out
 	tick: function(){
 
+		console.log('tick');
+
 		if (core.stationaryHands.length <= 0){
 			return false;
 		}
 
-		// grab a random hand (never the same one as the last one picked)
+		// grab a random hand
 		var handToMove = core.stationaryHands[Math.floor(Math.random()*core.stationaryHands.length)];
 
-		//var handToMove = core.hands[Math.floor(Math.random()*core.hands.length)];
 		handToMove.target = core.cakeLocation;
 		handToMove.moving = true;
 		handToMove.newTarget = true;
 
+		console.log(handToMove);
+
         core.handChooseSpeed -= 3;
 
         if (core.gameStillRunning){
-            core.handTimer = window.setTimeout(core.tick.bind(this), core.handChooseSpeed);
+            core.handTimer = window.setTimeout(core.tick, core.handChooseSpeed);
         }
 	},
 
@@ -215,7 +217,7 @@ var core = {
 			var sprite = core.state.sprites[i];
 			sprite.update(dt);
 			// if its a hand and its not moving, add it to the list of stationary hands (for random picking)
-			if(sprite.angle && sprite.moving === false){
+			if(sprite.angle && !sprite.moving){
 				core.stationaryHands.push(sprite);
 			}
 		}
@@ -230,6 +232,7 @@ var core = {
 	},
 
 	pause: function(){
+		core.gameStillRunning = false;
 		requestAnimFrame = null;
 	},
 
@@ -317,10 +320,10 @@ var core = {
 		});
 
 		core.cakeLocation = new core.Vector2D( core.width / 2, core.height / 2);
-		if(core.hands.length > 0){
+		/*if(core.hands.length > 0){
 			core.cakeLocation.x = (core.width / 2) - (core.hands[0].outputWidth / 2);
 			core.cakeLocation.y = (core.height / 2) - (core.hands[0].outputHeight / 2);
-		}
+		}*/
 
 		core.xRatio = core.width / previousWidth;
 		core.yRatio = core.height / previousHeight;

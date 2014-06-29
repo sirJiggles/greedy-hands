@@ -9,6 +9,7 @@ core.Mover = function(){
 
 	this.moving = false;
 	this.target = new core.Vector2D;
+	this.centerPoint = new core.Vector2D;
 	this.originalTarget = new core.Vector2D;
 	this.newTarget = false;
 
@@ -28,7 +29,16 @@ core.Mover.prototype.seek = function(optionalTarget){
 
 	// get the desired location vector
 	var desired = new core.Vector2D( (typeof optionalTarget !== 'undefined') ? optionalTarget : this.target);
-	desired.sub(this.location);
+
+	if(this.retreating){
+		desired.sub(this.location);
+	}else{
+		// this is because we have rotated the hands, can do a more elegant solution later
+		this.centerPoint.x = (this.location.x + (this.outputWidth / 2));
+		this.centerPoint.y = (this.location.y + (this.outputHeight / 2));
+
+		desired.sub(this.centerPoint);
+	}
 
 	// work out how far we are from the target
 	var distance = desired.mag();
@@ -49,18 +59,15 @@ core.Mover.prototype.seek = function(optionalTarget){
 		}
 	}
 
-	if(distance < 10){
+	if( (distance < this.outputHeight / 2) && core.maths.aboutTheSame(this.centerPoint, core.cakeLocation, this.outputHeight / 2)){
 		this.moving = false;
 		this.retreating = false;
+		core.gotTheCake();
 	}
 
-	// a little custm check to see if we are at the cake location
-	if(distance < 160){
-		if(core.maths.aboutTheSame(this.location, core.cakeLocation, 160)){
-			// stop the game and stop the score as someone got the cake!
-			core.gotTheCake();
-			this.moving = false;
-		}
+	if(distance < 10){
+		this.retreating = false;
+		this.moving = false;
 	}
 
 	var steering = new core.Vector2D(desired);
